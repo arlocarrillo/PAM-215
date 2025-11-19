@@ -1,4 +1,4 @@
-import { Text, StyleSheet, View } from 'react-native'
+import { Text, StyleSheet, View, Pressable } from 'react-native'
 
 export default function Profile({navigation}) {
     return (
