@@ -1,6 +1,5 @@
 import {View, Text, StyleSheet, Button} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
-import React from 'react';
 
 export default function Profile({navigation}) {
     return (
