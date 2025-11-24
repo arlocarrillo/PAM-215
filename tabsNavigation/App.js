@@ -1,12 +1,25 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Home from './Screens/home';
 import Profile from './Screens/profile';
 import Settings from './Screens/settings';
+import Detail from './Screens/detail';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
+
+function ProfileStackScreen() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen name="ProfileMain" component={Profile} options={{headerShown: false}}/>
+      <Stack.Screen name="Detail" component={Detail} options={{title: 'Detalles del usuario'}}/>
+    </Stack.Navigator>
+  );
+}
+
 export default function App() {
   return (
     <NavigationContainer>
@@ -19,7 +32,7 @@ export default function App() {
 
           if (route.name === 'Home') {
             iconName = 'home';
-          } else if (route.name === 'Profile') {
+          } else if (route.name === 'ProfileStack') {
             iconName = 'person';
           } else if (route.name === 'Settings') {
             iconName = 'settings';
@@ -35,7 +48,7 @@ export default function App() {
        })}
       >
         <Tab.Screen name="Home" component={Home} />
-        <Tab.Screen name="Profile" component={Profile} />
+        <Tab.Screen name="ProfileStack" component={ProfileStackScreen} options={{title:'Perfil'}}/>
         <Tab.Screen name="Settings" component={Settings} />
       </Tab.Navigator>
     </NavigationContainer>
