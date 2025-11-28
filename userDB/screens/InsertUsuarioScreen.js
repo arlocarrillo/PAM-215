@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { View, Text, TextInput, TouchableOpacity, FlatList,StyleSheet, Alert,ActivityIndicator,Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, FlatList,StyleSheet, Alert,ActivityIndicator,Platform, Modal } from 'react-native';
 import { UsuarioController } from '../controllers/UsuarioController';
 
 const controller = new UsuarioController();
@@ -10,6 +10,58 @@ export default function InsertUsuarioScreen() {
   const [nombre, setNombre] = useState('');
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [usuarioSeleccionado, setUsuarioSeleccionado] = useState(null);
+  const [nombreEdicion, setNombreEdicion] = useState('');
+  const [eliminando, setEliminando] = useState(false);
+
+  const handleEdit = (usuario) => {
+    setUsuarioSeleccionado(usuario);
+    setNombreEdicion(usuario.nombre);
+    setModalVisible(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalVisible(false);
+    setUsuarioSeleccionado(null);
+    setNombreEdicion('');
+  };
+
+  const handleSaveEdit = async () => {
+    if(!usuarioSeleccionado || guardando) return;
+    try {
+      setGuardando(true);
+      const usuarioActualizado = {...usuarioSeleccionado, nombre: nombreEdicion.trim()};
+      await controller.actualizarUsuario(usuarioActualizado);
+      Alert.alert('Éxito', `'${usuarioActualizado.nombre}' actualizado correctamente`);
+      handleCloseModal();
+    }catch (error){
+      Alert.alert('Error', error.message);
+    }finally{
+      setGuardando(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    Alert.alert('Confirmar eliminación', '¿Estás seguro de que deseas eliminar este usuario?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar', style: 'destructive', onPress: async() => {
+          if(eliminando) return;
+          try {
+            setEliminando(true);
+            await controller.eliminarUsuario(id);
+            Alert.alert('Éxito', 'Usuario eliminado correctamente');
+          }catch (error){
+            Alert.alert('Error', error.message);
+          }finally{
+            setEliminando(false);
+          }
+        }
+      }
+    ]
+    );
+  };
 
   const cargarUsuarios = useCallback(async() => {
     try {
@@ -68,6 +120,19 @@ export default function InsertUsuarioScreen() {
               day: 'numeric',
             })}
           </Text>
+        </View>
+
+        <View style={styles.actionContainer}>
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => handleEdit(item)} >
+            <Text style={styles.buttonText}>Editar</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDelete(item.id)} >
+            <Text style={styles.buttonText}>Eliminar</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -150,7 +215,40 @@ export default function InsertUsuarioScreen() {
 
       </View>
 
-
+      {/* Modal de edición */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={handleCloseModal}>
+          <View style={styles.centeredView}>
+            <View style={styles.modalView}>
+              <Text style={styles.modalTitle}>Editar Usuario</Text>
+              <Text style={styles.modalSubtitle}>Id: {usuarioSeleccionado?.id}</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Escribe el nombre del usuario"
+                value={nombreEdicion}
+                onChangeText={setNombreEdicion}
+                editable={!guardando}
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonSave, guardando && styles.buttonDisabled]}
+                  onPress={handleSaveEdit}
+                  disabled={guardando} >
+                  <Text style={styles.buttonText}>
+                    {guardando ? 'Guardando...' : 'Guardar Cambios'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonClose]}
+                  onPress={handleCloseModal}>
+                  <Text style={styles.buttonCloseText}>Cancelar</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+      </Modal>
     </View>
   );
 }
@@ -334,4 +432,71 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1976D2',
   },
+  actionContainer:{
+    flexDirection: 'row',
+    marginLeft: 10,
+  },
+  editButton:{
+    backgroundColor: '#4CAF50',
+    padding: 6,
+    borderRadius: 5,
+    marginRight: 8,
+  },
+  deleteButton:{
+    backgroundColor: '#F44336',
+    padding: 6,
+    borderRadius: 5,
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+    width: '85%',
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    color: '#333',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 20,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 15,
+    width: '100%',
+  },
+  buttonSave: {
+    backgroundColor: '#28A745', // Verde para Guardar
+    flex: 1,
+    marginRight: 10,
+  },
+  buttonClose: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    flex: 1,
+  },
+  buttonCloseText: {
+    color: '#007AFF',
+    fontSize: 16,
+    fontWeight: '600',
+},
 });

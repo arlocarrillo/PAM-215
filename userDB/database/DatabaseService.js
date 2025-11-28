@@ -50,5 +50,44 @@ class DatabaseService {
             };
         }
     }
+
+    async update(usuario){
+        if (Platform.OS === 'web'){
+            const usuarios = await this.getAll();
+            const index = usuarios.findIndex(u => u.id === usuario.id);
+            if (index !== -1){
+                usuarios[index] = usuario;
+                localStorage.setItem(this.storageKey, JSON.stringify(usuarios));
+                return usuario;
+            }
+            throw new Error('Usuario no encontrado');
+        }else{
+            await this.db.runAsync(
+                'UPDATE usuarios SET nombre = ? WHERE id = ?;',
+                usuario.nombre,
+                usuario.id
+            );
+            return usuario;
+        }
+    }
+
+    async delete(id){
+        if (Platform.OS === 'web'){
+            const usuarios = await this.getAll();
+            const nuevosUsuarios = usuarios.filter(u => u.id !== id);
+            const initialLength = usuarios.length;
+            if (nuevosUsuarios.length === initialLength){
+                throw new Error('Usuario no encontrado');
+            }
+            localStorage.setItem(this.storageKey, JSON.stringify(nuevosUsuarios));
+            return true;
+        }else{
+            await this.db.runAsync(
+                'DELETE FROM usuarios WHERE id = ?;',
+                id
+            );
+            return true;
+        }
+    }
 }
 export default new DatabaseService();
